@@ -1,0 +1,53 @@
+# ---------------------------------------------------------------------------
+# Course profiles.yml
+#
+# This file normally lives in ~/.dbt/ and is kept OUT of version control,
+# because it holds credentials. It ships inside the project here so that every
+# delegate has an identical working connection with nothing to configure, and
+# so we can read it together on screen. The password below is a throwaway on a
+# local container. Do not copy this pattern to work.
+#
+# Run dbt from this folder, or set DBT_PROFILES_DIR to point at it:
+#     dbt build --profiles-dir .
+# ---------------------------------------------------------------------------
+ads_dbt:
+  target: dev
+
+  outputs:
+
+    # --- Postgres: the course default, running in Docker -------------------
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: 5432
+      user: ads_dbt
+      password: ads_dbt_password
+      dbname: ads_dbt_analytics
+      schema: analytics
+      threads: 4
+
+    # --- Snowflake: walkthrough only, needs your own account ---------------
+    # Fill in account, user and role, then:  dbt build --target snowflake
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'SYSADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      database: ADS_DBT_ANALYTICS
+      schema: ANALYTICS
+      threads: 4
+      client_session_keep_alive: false
+
+    # --- BigQuery: walkthrough only, needs your own project ----------------
+    # Uses a service-account key file. Then:  dbt build --target bigquery
+    bigquery:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT', '') }}"
+      dataset: analytics
+      keyfile: "{{ env_var('GCP_KEYFILE', '') }}"
+      location: EU
+      threads: 4
+      priority: interactive

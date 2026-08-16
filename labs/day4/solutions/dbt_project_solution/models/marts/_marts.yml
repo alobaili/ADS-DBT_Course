@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: fct_service_requests
+    description: "Grain: one row per service request. The reporting fact table."
+    columns:
+      - name: request_id
+        data_tests: [unique, not_null]
+      - name: sla_met
+        description: "1 met, 0 missed, NULL where unknowable (open, or duration invalid)."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: resolution_band
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Fast', 'On-time', 'Slow']
+
+  - name: mart_sla_performance
+    description: "Grain: one row per service per month. Business question 1."
+    columns:
+      - name: sla_met_rate
+        description: "Proportion of judged requests resolved within target."
+
+  - name: mart_department_backlog
+    description: >
+      Grain: one row per department per month on a dense spine. Business question 2.
+      Built from the unresolved requests the Day 3 modelling table excluded.
+    columns:
+      - name: cumulative_backlog
+        data_tests: [not_null]
+
+  - name: ml_request_features
+    description: >
+      The Day 3 modelling table, rebuilt as a governed model. 12,000 rows against
+      the notebook CSV's 12,027.
+
+  - name: dim_service
+    columns:
+      - name: service_id
+        data_tests: [unique, not_null]
+  - name: dim_channel
+    columns:
+      - name: channel_id
+        data_tests: [unique, not_null]
+  - name: dim_district
+    columns:
+      - name: district_id
+        data_tests: [unique, not_null]
+  - name: dim_department
+    columns:
+      - name: department_id
+        data_tests: [unique, not_null]

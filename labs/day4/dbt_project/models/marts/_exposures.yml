@@ -1,0 +1,11 @@
+version: 2
+
+# LAB 3, STEP 4.  TODO: declare three exposures so the lineage graph reaches
+# past the edge of this project:
+#   1. the Day 3 machine learning notebooks, which consume ml_request_features
+#   2. an SLA dashboard, consuming mart_sla_performance and dim_service
+#   3. the monthly operations backlog review, consuming mart_department_backlog
+#
+# Then try:  dbt build --select +exposure:day3_ml_notebook
+
+exposures: []

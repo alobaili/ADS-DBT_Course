@@ -1,0 +1,9 @@
+version: 2
+
+# LAB 3, STEP 1.  TODO: describe each mart and test its grain.
+models:
+  - name: fct_service_requests
+    description: "Grain: one row per service request."
+    columns:
+      - name: request_id
+        # TODO: unique and not_null

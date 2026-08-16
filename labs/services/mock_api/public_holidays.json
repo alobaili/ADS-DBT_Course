@@ -1,0 +1,76 @@
+{
+  "feed": "public_holidays",
+  "version": "1.0.0",
+  "coverage": {
+    "from": "2024-01-01",
+    "to": "2025-02-28"
+  },
+  "count": 13,
+  "holidays": [
+    {
+      "date": "2024-01-01",
+      "name": "New Year's Day",
+      "scope": "national"
+    },
+    {
+      "date": "2024-02-19",
+      "name": "Founders Day",
+      "scope": "national"
+    },
+    {
+      "date": "2024-04-01",
+      "name": "Spring Public Holiday",
+      "scope": "national"
+    },
+    {
+      "date": "2024-05-06",
+      "name": "Labour Day",
+      "scope": "national"
+    },
+    {
+      "date": "2024-05-27",
+      "name": "Late Spring Holiday",
+      "scope": "national"
+    },
+    {
+      "date": "2024-08-26",
+      "name": "Summer Public Holiday",
+      "scope": "national"
+    },
+    {
+      "date": "2024-09-23",
+      "name": "National Day",
+      "scope": "national"
+    },
+    {
+      "date": "2024-10-14",
+      "name": "Civic Holiday",
+      "scope": "regional"
+    },
+    {
+      "date": "2024-11-11",
+      "name": "Remembrance Day",
+      "scope": "regional"
+    },
+    {
+      "date": "2024-12-25",
+      "name": "Winter Public Holiday",
+      "scope": "national"
+    },
+    {
+      "date": "2024-12-26",
+      "name": "Winter Public Holiday (second day)",
+      "scope": "national"
+    },
+    {
+      "date": "2025-01-01",
+      "name": "New Year's Day",
+      "scope": "national"
+    },
+    {
+      "date": "2025-02-17",
+      "name": "Founders Day",
+      "scope": "national"
+    }
+  ]
+}

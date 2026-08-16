@@ -1,0 +1,29 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Landing zone written by seed_postgres.py on Day 1. Everything arrives as
+      text, exactly as a real extract would, so every typing decision is visible
+      and version-controlled in the staging layer rather than hidden in an import.
+    schema: raw
+    tables:
+      - name: service_requests
+        description: >
+          One row per submitted citizen service request, before cleaning.
+          Carries injected duplicates and data-quality faults.
+        loaded_at_field: >
+          case
+            when submitted_at ~ '^\d{4}-\d{2}-\d{2}'
+              then to_timestamp(submitted_at, 'YYYY-MM-DD HH24:MI:SS')::timestamp
+            else to_timestamp(submitted_at, 'DD-Mon-YYYY HH24:MI')::timestamp
+          end
+        freshness:
+          # Deliberately set so `dbt source freshness` FAILS on this teaching
+          # dataset, whose newest record is early 2025. Delegates should see what
+          # a stale source looks like rather than only ever seeing a green tick.
+          warn_after: {count: 30, period: day}
+          error_after: {count: 90, period: day}
+        columns:
+          - name: request_id
+            description: "Business key. NOT unique in the raw feed: 60 requests appear twice."

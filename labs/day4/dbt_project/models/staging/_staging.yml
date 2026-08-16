@@ -1,0 +1,25 @@
+version: 2
+
+# LAB 3, STEP 1.  Add generic tests.
+# In dbt 1.10 the parameters of a generic test sit under an `arguments:` key.
+#
+#   - name: priority
+#     data_tests:
+#       - accepted_values:
+#           arguments:
+#             values: ['Low', 'Medium', 'High']
+
+models:
+  - name: stg_service_requests
+    description: >
+      One row per service request, typed, cleaned and deduplicated on the
+      business key.
+    columns:
+      - name: request_id
+        description: "Business key. Unique here, unlike in the raw source."
+        # TODO: unique and not_null. This test IS the grain of the model.
+      # TODO: not_null on submitted_at
+      # TODO: accepted_values on priority and status
+      # TODO: relationships from each foreign key to its dimension
+
+  # TODO: add stg_services, stg_channels, stg_districts, stg_departments

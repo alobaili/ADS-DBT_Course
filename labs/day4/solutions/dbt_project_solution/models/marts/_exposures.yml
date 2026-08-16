@@ -1,0 +1,44 @@
+version: 2
+
+exposures:
+  - name: day3_ml_notebook
+    label: "Day 3 machine learning notebooks"
+    type: ml
+    maturity: medium
+    url: "file:///C:/ADS-DBT_Course/labs/day3/lab1_models.ipynb"
+    description: >
+      The supervised and unsupervised models built on Day 3 read their features
+      from ml_request_features. Declaring this as an exposure means the lineage
+      graph shows that a change to the staging cleaning rules reaches a model in
+      production, and `dbt build --select +exposure:day3_ml_notebook` rebuilds
+      exactly what that notebook depends on.
+    depends_on:
+      - ref('ml_request_features')
+    owner:
+      name: Data Science Team
+      email: data.science@example.gov
+
+  - name: sla_executive_dashboard
+    label: "SLA performance dashboard"
+    type: dashboard
+    maturity: high
+    description: >
+      Monthly service-level reporting to the directorate leadership.
+    depends_on:
+      - ref('mart_sla_performance')
+      - ref('dim_service')
+    owner:
+      name: Analytics Engineering
+      email: analytics@example.gov
+
+  - name: operations_backlog_review
+    label: "Monthly operations backlog review"
+    type: analysis
+    maturity: medium
+    description: >
+      Department backlog trend used in the monthly operations meeting.
+    depends_on:
+      - ref('mart_department_backlog')
+    owner:
+      name: Operations
+      email: operations@example.gov

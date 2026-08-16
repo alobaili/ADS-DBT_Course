@@ -1,0 +1,49 @@
+name: 'ads_dbt'
+version: '1.0.0'
+config-version: 2
+profile: 'ads_dbt'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+analysis-paths: ["analyses"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  ads_dbt:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  ads_dbt:
+    +schema: seeds
+    services:
+      +column_types:
+        service_id: integer
+        target_resolution_hours: integer
+    channels:
+      +column_types:
+        channel_id: integer
+        is_digital: boolean
+    districts:
+      +column_types:
+        district_id: integer
+        population: integer
+    departments:
+      +column_types:
+        department_id: integer
+
+snapshots:
+  ads_dbt:
+    +target_schema: snapshots

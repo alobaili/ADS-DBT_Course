@@ -1,0 +1,6 @@
+channel_id,channel_name,is_digital
+1,Web Portal,True
+2,Mobile App,True
+3,Call Centre,False
+4,Walk-in Centre,False
+5,WhatsApp,True

@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: stg_service_requests
+    description: >
+      One row per service request, typed, cleaned and deduplicated on the business
+      key. This is where the duplicate question Day 1 left open is finally closed.
+    columns:
+      - name: request_id
+        description: "Business key. Unique here, unlike in the raw source."
+        data_tests:
+          - unique
+          - not_null
+      - name: submitted_at
+        description: "Parsed from two source date formats. Never null."
+        data_tests:
+          - not_null
+      - name: priority
+        description: "Collapsed from 13 raw spellings to three."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Low', 'Medium', 'High']
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Resolved', 'Open', 'Reopened']
+      - name: service_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_services')
+                field: service_id
+      - name: channel_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_channels')
+                field: channel_id
+      - name: district_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_districts')
+                field: district_id
+      - name: department_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_departments')
+                field: department_id
+
+  - name: stg_services
+    columns:
+      - name: service_id
+        data_tests: [unique, not_null]
+  - name: stg_channels
+    columns:
+      - name: channel_id
+        data_tests: [unique, not_null]
+  - name: stg_districts
+    columns:
+      - name: district_id
+        data_tests: [unique, not_null]
+  - name: stg_departments
+    columns:
+      - name: department_id
+        data_tests: [unique, not_null]

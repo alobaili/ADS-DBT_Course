@@ -1,0 +1,14 @@
+# ---------------------------------------------------------------------------
+# OFFLINE (active by default on the course VMs): resolve dbt_utils from the copy
+# vendored in this repository. Needs no network at all.
+# ---------------------------------------------------------------------------
+packages:
+  - local: ../vendor/dbt_utils
+
+# ---------------------------------------------------------------------------
+# ONLINE: this is what you will use at work. Comment out the block above,
+# uncomment the block below, and run `dbt deps` again.
+# ---------------------------------------------------------------------------
+# packages:
+#   - package: dbt-labs/dbt_utils
+#     version: 1.3.0

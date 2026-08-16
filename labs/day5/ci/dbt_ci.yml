@@ -1,0 +1,135 @@
+# ---------------------------------------------------------------------------
+# Continuous integration for the dbt project.
+#
+# This runs on every pull request. Its job is to answer one question before a
+# human spends time reviewing: does this change still build, and do the tests
+# the team wrote still pass?
+#
+# The tests being run here are the ones written on Day 4. Nothing new is
+# invented for CI. That is the point: CI is not a separate quality activity, it
+# is the thing that runs the quality checks you already have, on every change,
+# without anyone remembering to.
+#
+# To use this at work, copy it to .github/workflows/dbt_ci.yml in your repo.
+# ---------------------------------------------------------------------------
+name: dbt CI
+
+on:
+  pull_request:
+    paths:
+      # Only run when something that affects the warehouse actually changed.
+      # A README edit should not spend two minutes building models.
+      - "labs/day4/**"
+      - ".github/workflows/dbt_ci.yml"
+  workflow_dispatch:
+
+# A second push to the same pull request cancels the first run, so the queue
+# does not fill up with results nobody will read.
+concurrency:
+  group: dbt-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # CI needs a warehouse to build into. This is a throwaway Postgres that
+    # exists for the length of the job and is destroyed with it, which is why
+    # the password below does not matter.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ads_dbt
+          POSTGRES_PASSWORD: ads_dbt_password
+          POSTGRES_DB: ads_dbt_analytics
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ads_dbt -d ads_dbt_analytics"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: localhost
+      # Build into a schema named after the pull request, so two open pull
+      # requests cannot overwrite each other's tables.
+      DBT_SCHEMA: ci_pr_${{ github.event.number }}
+
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install the pinned stack
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install dbt packages
+        working-directory: labs/day4/solutions/dbt_project_solution
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/labs/day4/solutions/dbt_project_solution
+        run: dbt deps
+
+      - name: Seed the source data
+        run: python seed_postgres.py
+
+      # dbt build runs models, tests, seeds and snapshots in dependency order,
+      # so a model is only tested once the thing it depends on has been built.
+      # Running dbt run and dbt test separately would test against stale tables.
+      - name: Build and test
+        working-directory: labs/day4/solutions/dbt_project_solution
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/labs/day4/solutions/dbt_project_solution
+        run: dbt build
+
+      # Documentation is generated on every run so it cannot drift from the
+      # models. If a model gains a column and nobody describes it, that shows up
+      # here rather than three months later.
+      - name: Generate documentation
+        working-directory: labs/day4/solutions/dbt_project_solution
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/labs/day4/solutions/dbt_project_solution
+        run: dbt docs generate
+
+      - name: Publish the documentation as a build artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-docs
+          path: labs/day4/solutions/dbt_project_solution/target/
+          retention-days: 7
+
+  # -------------------------------------------------------------------------
+  # Slim CI, shown here as the next step rather than run on this course.
+  #
+  # The job above rebuilds everything on every pull request. That is fine for
+  # sixteen models and untenable for sixteen hundred. Slim CI compares the
+  # branch against the artefacts from the last successful production run and
+  # rebuilds only what changed, plus whatever depends on it.
+  #
+  # The selector that does the work is:
+  #     dbt build --select state:modified+ --state ./prod_artefacts
+  #
+  # The trailing + means "and everything downstream", which matters: a changed
+  # staging model can break a mart three layers away, and that mart must be
+  # rebuilt and retested even though its own file is untouched.
+  #
+  # It needs somewhere to keep manifest.json from the last production run. Most
+  # teams store it as a build artefact or in cloud storage and download it here.
+  # -------------------------------------------------------------------------
+  #
+  # slim-build:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Fetch the production manifest
+  #       run: aws s3 cp s3://our-bucket/dbt/manifest.json ./prod_artefacts/manifest.json
+  #     - name: Build only what changed, and what depends on it
+  #       run: dbt build --select state:modified+ --state ./prod_artefacts

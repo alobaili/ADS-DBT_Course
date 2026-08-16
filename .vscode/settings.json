@@ -1,0 +1,10 @@
+﻿{
+  "python.defaultInterpreterPath": "C:\\ADS-DBT_Course\\.venv\\Scripts\\python.exe",
+  "python.terminal.activateEnvironment": true,
+  "jupyter.notebookFileRoot": "${workspaceFolder}",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.ipynb_checkpoints": true
+  }
+}

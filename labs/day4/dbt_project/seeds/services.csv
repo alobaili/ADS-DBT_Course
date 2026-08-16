@@ -1,0 +1,11 @@
+service_id,service_name,category,target_resolution_hours
+10,Water Supply Fault,Utilities,24
+11,Street Lighting Fault,Utilities,48
+12,Waste Collection,Utilities,24
+13,Road Maintenance,Infrastructure,72
+14,Building Permit,Permits,240
+15,Business Licence Renewal,Permits,120
+16,Property Tax Enquiry,Finance,48
+17,Public Transport Card,Transport,24
+18,Noise Complaint,Environment,72
+19,Parks and Recreation,Environment,96

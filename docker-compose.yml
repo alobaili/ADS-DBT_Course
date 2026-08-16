@@ -1,0 +1,140 @@
+# Applied Data Science & ML with Python and dbt - shared stack
+# Postgres is the single source of truth across all five days.
+#
+# Days 1 to 4:  docker compose up -d                  -> postgres + adminer
+# Day 5:        docker compose --profile day5 up -d   -> all five containers
+#
+# The Day 5 services carry a profile so they stay out of the way until Friday.
+# This keeps Day 1's "two containers running" checkpoint accurate.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: ads-dbt_postgres
+    environment:
+      POSTGRES_USER: ads_dbt
+      POSTGRES_PASSWORD: ads_dbt_password
+      POSTGRES_DB: ads_dbt_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - ads_dbt_pgdata:/var/lib/postgresql/data
+      # Creates the separate `airflow` metadata database on first init.
+      # Only runs when the data directory is empty, so a stale volume must be
+      # removed with `docker compose down -v` for this to take effect.
+      - ./labs/services/postgres_init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ads_dbt -d ads_dbt_analytics"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    mem_limit: 1g
+
+  # Optional web UI for inspecting Postgres. Open http://localhost:8081
+  adminer:
+    image: adminer:4
+    container_name: ads-dbt_adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    mem_limit: 256m
+
+  # --- Day 5 only, below this line ------------------------------------------
+
+  # The course mock API, source for the ingestion lab.
+  # A tiny standard-library HTTP server. No image build, no internet, no keys.
+  mock_api:
+    profiles: ["day5"]
+    image: python:3.12-slim
+    container_name: ads-dbt_mock_api
+    working_dir: /app
+    command: python app.py
+    environment:
+      HOLIDAYS_PATH: /app/public_holidays.json
+      MOCK_API_PORT: 8000
+    volumes:
+      - ./labs/services/mock_api:/app:ro
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflow, the anchor orchestrator.
+  #
+  # The course environment lives at /opt/venv inside the image, NOT under
+  # /opt/course. The bind mount below overlays /opt/course with the host
+  # folder at runtime, which would hide an image venv built there and expose
+  # the host's Windows .venv instead - and that has no bin/python.
+  #
+  # The dags mount points at the delegate's own empty folder, so the DAGs list
+  # starts empty exactly as the workbook says at C.1. The reference DAG lives
+  # at labs/day5/reference/airflow/dags/ads_dbt_pipeline.py for comparison.
+  airflow:
+    profiles: ["day5"]
+    build:
+      context: .
+      dockerfile: labs/day5/airflow/Dockerfile
+    container_name: ads-dbt_airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://ads_dbt:ads_dbt_password@postgres:5432/airflow
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
+      COURSE_PYTHON: /opt/venv/bin/python
+      COURSE_STEPS: /opt/course/labs/day5/reference/run_step.py
+      POSTGRES_HOST: postgres
+      HOLIDAYS_API_URL: http://mock_api:8000/holidays
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+    volumes:
+      - .:/opt/course
+      - ./labs/day5/airflow/dags:/opt/airflow/dags
+      - ads_dbt_airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    command: >-
+      bash -c "airflow db migrate &&
+      (airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true) &&
+      exec airflow standalone"
+
+  # Dagster, the comparative orchestrator.
+  #
+  # Loads the reference definitions, so the asset graph is populated the
+  # moment the UI opens at D.1 and Section D runs as a walkthrough. Delegates
+  # read labs/day5/reference/dagster/ads_dbt_dagster/definitions.py alongside
+  # the graph rather than authoring it themselves.
+  dagster:
+    profiles: ["day5"]
+    build:
+      context: .
+      dockerfile: labs/day5/dagster/Dockerfile
+    container_name: ads-dbt_dagster
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DAGSTER_HOME: /opt/dagster_home
+      COURSE_PYTHON: /opt/venv/bin/python
+      COURSE_STEPS: /opt/course/labs/day5/reference/run_step.py
+      POSTGRES_HOST: postgres
+      HOLIDAYS_API_URL: http://mock_api:8000/holidays
+    volumes:
+      - .:/opt/course
+      - ads_dbt_dagster_home:/opt/dagster_home
+    ports:
+      - "3000:3000"
+    command: >-
+      dagster dev -h 0.0.0.0 -p 3000
+      -f /opt/course/labs/day5/reference/dagster/ads_dbt_dagster/definitions.py
+
+volumes:
+  ads_dbt_pgdata:
+  ads_dbt_airflow_logs:
+  ads_dbt_dagster_home:
